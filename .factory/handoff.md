@@ -1,22 +1,21 @@
-# Work Receipt adversarial review 3 handoff
+# Work Receipt adversarial review 4 handoff
 
 ## Outcome
 
-Review 3 is complete at candidate `483f20e9ddf51c691b2275b9b207c1e287927648`. The verdict is **FAIL** with one blocking history finding: F-1-9 remains half-fixed because both sample-evidence pages use a different header and wordmark destination from every other route.
+Review 4 is complete at `b749987686ca0875ad5a72dde551b1a1fe618bd4` with a **PASS** verdict. No product code was changed. The review artifact is `.factory/review-4.md`.
 
-No product code was changed. The review artifact is `.factory/review-3.md`.
+The previous blocking history item, F-1-9, is now verified fixed live and in source: both sample-evidence routes use the standard Work Receipt home link plus Demo and Privacy header navigation. The route-wide test asserts it.
 
 ## Verification performed
 
-- Cold live reads in fresh Chromium contexts at 390 × 844 and 1440 × 900.
-- Live one-click demo, realistic sample receipt, namespace isolation, mutation/reset, exit, and real-record preservation.
-- Live request logging and offline demo reload; only same-origin GETs with empty bodies were observed.
-- Fresh no-local clone with `npm ci`, `npm test`, `npm run build`, all 18 registered claim commands individually, and `npm run test:e2e`.
-- Live metadata, one-h1/main/lang, console, full-impact axe, 390 px overflow/touch targets, unknown-route 404, internal-link crawl, and forward/back focus checks across all shipped routes.
-- Source/live artifact hash comparison and source review for every earlier finding.
+- Fresh live Chromium reads at 390 × 844 and 1440 × 900; first-screen copy, mobile width, requests, and console checked.
+- Live one-click demo: sample receipt, required banner, reset, exit, real-record isolation, IndexedDB namespace disposal, and request logging checked.
+- Fresh no-local clone: `npm ci`, `npm test` (7/7), and `npm run build` (produced `dist/`) passed.
+- All 18 exact registered claim commands were run individually and passed.
+- The full Playwright end-to-end suite was run from the fresh clone without failed tests; it covers route-wide axe, mobile targets/overflow, metadata, links, headers/console, history focus, standard headers, and offline use.
+- Live route/status checks covered root, Demo, Privacy, Terms, both evidence pages, and an unknown-route HTTP 404. The live internal-link crawl found nine distinct linked destinations, all successful.
+- All previous review/polish/verification/handoff findings were checked against live behavior and current source.
 
-Results: 7/7 unit tests; 18/18 individual claim checks; 53 browser tests passed with 5 intentional duplicate-project skips; build produced `dist/`; live axe found zero violations; 15 unique internal links had no dead destination.
+## Known gaps and next steps
 
-## Required next step
-
-Use the standard header on both `public/sample-evidence/checkout-review.html` and `public/sample-evidence/research-summary.html`: Work Receipt → `/`, Demo → `/demo`, Privacy → `/privacy/`. Keep Return to demo in the page body and add an exact route-wide header-shell assertion. Redeploy and verify the two live routes before another review.
+None found in this review. Future implementation work should preserve the isolated `demo:` storage namespace, explicit self-reported receipt wording, and the claim-test mapping.
