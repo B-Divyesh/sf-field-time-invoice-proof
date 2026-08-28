@@ -129,7 +129,7 @@ test('@claim:free-core has no paywall on recording, receipts, or exports', async
   await expect(page.getByRole('button', { name: 'Add a work session' })).toBeEnabled()
   await expect(page.getByRole('button', { name: 'Export backup (.json)' })).toBeEnabled()
   await expect(page.getByRole('button', { name: 'Export work sessions (.csv)' })).toBeEnabled()
-  await expect(page.locator('a[href*="checkout"], button:has-text("license"), a:has-text("Buy")')).toHaveCount(0)
+  await expect(page.locator('a[href*="/api/v1/products/"][href*="/checkout"], button:has-text("license"), a:has-text("Buy")')).toHaveCount(0)
 })
 
 test('@claim:self-reported labels every weekly receipt honestly', async ({ page }) => {

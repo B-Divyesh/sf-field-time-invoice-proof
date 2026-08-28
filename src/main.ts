@@ -518,9 +518,9 @@ async function seedDemo(force = false): Promise<void> {
   }
   if (await db.sessions.count()) return
   const samples: WorkSession[] = [
-    { id: 'demo-discovery', project: 'Northwind website', outcome: 'Mapped checkout errors and agreed on the revised purchase flow.', evidence: 'https://example.com/review-notes', aiAssisted: false, interruptionMinutes: 15, startedAt: demoDate(0, 9, 0).toISOString(), endedAt: demoDate(0, 11, 15).toISOString(), createdAt: demoDate(0, 11, 15).toISOString(), updatedAt: demoDate(0, 11, 15).toISOString() },
+    { id: 'demo-discovery', project: 'Northwind website', outcome: 'Mapped checkout errors and agreed on the revised purchase flow.', evidence: `${location.origin}/sample-evidence/checkout-review.html`, aiAssisted: false, interruptionMinutes: 15, startedAt: demoDate(0, 9, 0).toISOString(), endedAt: demoDate(0, 11, 15).toISOString(), createdAt: demoDate(0, 11, 15).toISOString(), updatedAt: demoDate(0, 11, 15).toISOString() },
     { id: 'demo-copy', project: 'Northwind website', outcome: 'Rewrote the checkout guidance and prepared two review options.', evidence: '', aiAssisted: true, interruptionMinutes: 20, startedAt: demoDate(1, 13, 0).toISOString(), endedAt: demoDate(1, 16, 20).toISOString(), createdAt: demoDate(1, 16, 20).toISOString(), updatedAt: demoDate(1, 16, 20).toISOString() },
-    { id: 'demo-release', project: 'Harbor research', outcome: 'Delivered the interview summary and the next-round research plan.', evidence: 'https://example.com/research-summary', aiAssisted: false, interruptionMinutes: 0, startedAt: demoDate(2, 10, 0).toISOString(), endedAt: demoDate(2, 12, 30).toISOString(), createdAt: demoDate(2, 12, 30).toISOString(), updatedAt: demoDate(2, 12, 30).toISOString() },
+    { id: 'demo-release', project: 'Harbor research', outcome: 'Delivered the interview summary and the next-round research plan.', evidence: `${location.origin}/sample-evidence/research-summary.html`, aiAssisted: false, interruptionMinutes: 0, startedAt: demoDate(2, 10, 0).toISOString(), endedAt: demoDate(2, 12, 30).toISOString(), createdAt: demoDate(2, 12, 30).toISOString(), updatedAt: demoDate(2, 12, 30).toISOString() },
   ]
   await db.transaction('rw', db.sessions, db.settings, async () => {
     await db.sessions.bulkPut(samples)

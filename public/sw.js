@@ -1,6 +1,6 @@
-const CACHE = 'work-receipt-shell-v4'
-const ASSET_CACHE = 'work-receipt-assets-v4'
-const SHELL = ['/', '/demo', '/index.html', '/404.html', '/offline.html', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png', '/assets/hero-notebook-720.webp', '/assets/hero-notebook-1200.webp', '/assets/work-receipt-social.jpg', '/privacy/', '/terms/']
+const CACHE = 'work-receipt-shell-v5'
+const ASSET_CACHE = 'work-receipt-assets-v5'
+const SHELL = ['/', '/demo', '/index.html', '/404.html', '/offline.html', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png', '/assets/hero-notebook-720.webp', '/assets/hero-notebook-1200.webp', '/assets/work-receipt-social.jpg', '/privacy/', '/terms/', '/sample-evidence/checkout-review.html', '/sample-evidence/research-summary.html']
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
