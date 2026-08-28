@@ -1,4 +1,10 @@
-# Work Receipt v1 handoff
+# Work Receipt v1 handoff — verification status: FAIL
+
+## Independent verification (2026-08-28)
+
+Candidate `4716d10191c65df5ebc2a0275179036fc274c341` was independently built and tested against https://field-time-invoice-proof.sociobot.in/. **FAIL:** the live deployment matches the candidate exactly, but it has two medium-severity acceptance defects: a 12px horizontal overflow at a 390px mobile viewport (`scrollWidth` 402 / `clientWidth` 390), and hashed production JS/CSS are served with only `Cache-Control: public, must-revalidate, max-age=30` rather than long-lived immutable caching.
+
+The complete reproducible evidence, commands, product-path coverage, PWA/offline checks, header findings, and all defects are in `.factory/verification.md`. Local quality gates passed: `npm ci`, `npm test` (7/7), `npm run build`, and `npm run test:e2e` (9 passed, 1 expected skip); Lighthouse mobile was 99 performance / 100 accessibility. Do not treat the release as accepted until the two medium defects are corrected and reverified.
 
 ## What shipped
 
