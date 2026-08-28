@@ -35,4 +35,14 @@ Candidate `4716d10191c65df5ebc2a0275179036fc274c341` was repaired against cumula
 
 ## Live evidence summary
 
-Pending final deployment check; this section is replaced with exact production results before handoff.
+- Deployed commit: `fe60b4bb5e6bcad9b37fe3a9b107527d3632334b`.
+- `/`, `/demo`, `/?demo=1`, `/privacy/`, `/terms/`, `/robots.txt`, and `/sitemap.xml`: expected content and status 200.
+- `/not-a-real-page`: designed 404 content and HTTP 404.
+- Demo: three sample sessions; visible banner; isolated database; reset passed; start-real restored the untouched real record; offline reload passed.
+- Privacy: complete cold demo flow made zero cross-origin requests. Console errors: zero.
+- Accessibility: axe violations at all impact levels: zero. Mobile width: `390/390`.
+- Titles: root, Demo, Privacy, and Terms all matched their route-specific titles. `?demo=1` updated to `Demo — Work Receipt` after initialization.
+- Headers: CSP/frame protection/Permissions-Policy present; manifest MIME is `application/manifest+json`; hashed JS/CSS are `public, max-age=31536000, immutable`.
+- Artifact match: live JS SHA-256 `95f7b6aec60559491e2a646fc4ae925bae85f55f27b65485aff0784937e9eecf`; live CSS SHA-256 `d8e811f9d38ce8a1f2cfa2746a8bd5e9e4edf5c80684ccb770cba4d24f23fa32`; both equal local `dist/`.
+- Live Lighthouse: 100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO; LCP 1.7 s, TBT 50 ms, CLS 0.003, TTI 1.7 s.
+- Screenshots and verifier JSON: `.factory/evidence/live-home/` and `.factory/evidence/live-demo/`.
