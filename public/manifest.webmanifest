@@ -1,9 +1,9 @@
 {
-  "name": "Work Receipt — private work notes",
+  "name": "Work Receipt — freelance time receipts",
   "short_name": "Work Receipt",
-  "description": "A local-first work log and weekly client receipt for freelancers.",
+  "description": "Record freelance work sessions and create a self-reported weekly PDF for clients.",
   "id": "/?source=pwa",
-  "start_url": "/?v=1",
+  "start_url": "/?v=4",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f4eedc",

@@ -10,12 +10,15 @@ export const defaultSettings: Settings = {
   updatedAt: new Date(0).toISOString(),
 }
 
+export const isDemoMode = location.pathname === '/demo' || new URLSearchParams(location.search).get('demo') === '1'
+export const databaseName = isDemoMode ? 'demo:work-receipt' : 'work-receipt'
+
 class WorkReceiptDB extends Dexie {
   sessions!: Table<WorkSession, string>
   settings!: Table<Settings, string>
 
   constructor() {
-    super('work-receipt')
+    super(databaseName)
     this.version(1).stores({
       sessions: 'id, startedAt, project, updatedAt',
       settings: 'id',
@@ -33,7 +36,7 @@ export async function getSettings(): Promise<Settings> {
   return (await db.settings.get('settings')) ?? defaultSettings
 }
 
-export const TIMER_KEY = 'work-receipt:active-timer'
+export const TIMER_KEY = isDemoMode ? 'demo:work-receipt:active-timer' : 'work-receipt:active-timer'
 
 export function getActiveTimer(): ActiveTimer | null {
   try {

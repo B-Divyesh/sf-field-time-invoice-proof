@@ -1,0 +1,72 @@
+[
+  {
+    "id": "demo-isolation",
+    "claim": "The one-click demo uses sample data that stays separate from real records and can be reset.",
+    "where": "landing action, demo banner, privacy page, README",
+    "test": "npm run test:claims -- --grep @claim:demo-isolation",
+    "sandbox": "fresh browser context; create a real record; enter demo; mutate and reset it; return to real data"
+  },
+  {
+    "id": "local-privacy",
+    "claim": "Work Receipt sends no work-session data, analytics, or tracking requests.",
+    "where": "landing privacy section, privacy page, README",
+    "test": "npm run test:claims -- --grep @claim:local-privacy",
+    "sandbox": "fresh demo context; record all requests while editing a session and opening its receipt; allow same-origin only"
+  },
+  {
+    "id": "session-persistence",
+    "claim": "Saved work sessions remain in this browser after reload.",
+    "where": "landing facts, work-session feedback, README",
+    "test": "npm run test:claims -- --grep @claim:session-persistence",
+    "sandbox": "fresh browser context; create a real work session; reload; assert its full outcome remains"
+  },
+  {
+    "id": "offline-reload",
+    "claim": "Saved work sessions open offline after the first visit.",
+    "where": "landing facts, README",
+    "test": "npm run test:claims -- --grep @claim:offline-reload",
+    "sandbox": "fresh demo context; wait for service-worker control; go offline; reload; assert sample work session and offline status"
+  },
+  {
+    "id": "json-roundtrip",
+    "claim": "A JSON backup exports and restores all work sessions.",
+    "where": "backup section, privacy page, README",
+    "test": "npm run test:claims -- --grep @claim:json-roundtrip",
+    "sandbox": "fresh context; create a work session; export and parse JSON; delete it; import the file; assert restoration"
+  },
+  {
+    "id": "csv-export",
+    "claim": "CSV export contains one row for every work session.",
+    "where": "backup section, privacy page, README",
+    "test": "npm run test:claims -- --grep @claim:csv-export",
+    "sandbox": "fresh demo context; download CSV; assert headers and three sample rows"
+  },
+  {
+    "id": "pdf-receipt",
+    "claim": "The weekly PDF lists outcomes, billable time, interruptions, and selected evidence.",
+    "where": "receipt section, README",
+    "test": "npm run test:claims -- --grep @claim:pdf-receipt",
+    "sandbox": "fresh demo context; assert receipt preview details; download a non-empty PDF"
+  },
+  {
+    "id": "installable-pwa",
+    "claim": "Work Receipt provides an installable PWA manifest and service worker.",
+    "where": "README",
+    "test": "npm run test:claims -- --grep @claim:installable-pwa",
+    "sandbox": "fresh browser context; validate manifest fields and an active controlling service worker"
+  },
+  {
+    "id": "free-core",
+    "claim": "Recording, receipt details, weekly PDFs, backup, import, and CSV export are free with no paid tier.",
+    "where": "landing facts, terms page, README",
+    "test": "npm run test:claims -- --grep @claim:free-core",
+    "sandbox": "fresh browser context; verify all core controls are enabled and no checkout or license controls exist"
+  },
+  {
+    "id": "self-reported",
+    "claim": "Every weekly receipt identifies itself as self-reported rather than independent proof.",
+    "where": "hero caption, receipt preview, terms page, README",
+    "test": "npm run test:claims -- --grep @claim:self-reported",
+    "sandbox": "fresh demo context; assert the receipt heading and disclaimer"
+  }
+]

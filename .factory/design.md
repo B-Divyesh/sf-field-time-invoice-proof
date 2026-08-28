@@ -55,3 +55,5 @@ Generation prompt: “Overhead editorial still life of an open handwritten field
 ## Provenance
 
 The hero asset is generated specifically for Work Receipt using the factory Azure OpenAI image deployment (`factory-image`) on 2026-08-28. The exact prompt and generation parameters live alongside the source asset in `assets/src/hero-notebook.json`. Generated imagery is disclosed in the product footer. Hand-authored interface marks are MIT-licensed with the repository.
+
+`public/assets/work-receipt-social.jpg` is a 1200×630 center crop of that reviewed hero source. `public/icons/apple-touch-icon.png` is a resized derivative of the hand-authored Work Receipt icon. No new third-party asset was introduced during polish round 1.

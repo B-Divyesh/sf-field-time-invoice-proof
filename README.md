@@ -1,51 +1,60 @@
 # Work Receipt
 
-Work Receipt is a private, offline-first field notebook for freelancers who need to explain billable work without surveillance. Record timed or manual sessions, describe outcomes and interruptions, attach optional evidence links, and generate a client-readable weekly PDF. AI-assisted work can be labelled openly without pretending that a timer independently verifies it.
+Turn freelance work sessions into a private weekly client receipt.
 
-All work records live in IndexedDB on the current device. There is no account, telemetry, screenshot capture, or activity inference. JSON backup/import and CSV export keep the data portable.
+For independent hourly workers who need to explain billable time. Use it when review, waiting, and judgment do not show in an activity tracker.
 
-## Who it is for
+Record timed or manual work sessions. Add outcomes, breaks, optional evidence links, and an AI-assisted label. Create a weekly PDF that stays clear about being self-reported.
 
-Independent knowledge workers who bill hourly and want a humane attachment for invoices—especially when time includes prompting, review, waiting, and judgment that activity trackers represent poorly.
+Your records stay in this browser on this device. The app sends no work-session data, analytics, or tracking requests. Saved work sessions open offline after the first visit.
+
+## Try the sample
+
+Open `http://localhost:4173/demo` after starting the app. The live demo is at [field-time-invoice-proof.sociobot.in/demo](https://field-time-invoice-proof.sociobot.in/demo).
+
+The demo starts with three work sessions and an open weekly receipt. Its database is separate from your real records. Use **Reset demo** to restore the sample or **Start for real** to discard it.
+
+## What it includes
+
+- A timer and manual entry for work sessions.
+- A self-reported weekly receipt and PDF download.
+- JSON backup and restore.
+- CSV export with one row per work session.
+- Receipt name, client, and closing-note settings.
+- An installable app manifest and offline service worker.
+
+Recording, receipt details, PDFs, backup, import, and CSV export are free. There is no paid tier or embedded payment provider.
 
 ## Run locally
 
 Requires Node.js 20 or newer.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:4173`. The app installs as a PWA after its first successful load.
+Open `http://localhost:4173`.
 
 ## Test and build
 
 ```bash
 npm test
+npm run test:claims
 npm run build
 npm run test:e2e
 ```
 
-The exact production build command is `npm run build`. Static deployment output is written to `dist/`, with `dist/index.html` at its root. Preview it using `npm run preview`.
+Each visitor-facing claim is listed in `.factory/claims.json`. Each has one tagged browser test. The production build is written to `dist/`.
 
-## Studio license configuration
+## Privacy and limits
 
-The free tier includes core recording, weekly PDF generation, and all data exports. The one-time Studio unlock adds custom receipt identity. Production defaults to the registered slug and Sociobot API; factory builds can override these without changing source:
+Work Receipt does not watch activity, capture screens, or verify completed work. Evidence links are stored as text and open only when selected.
 
-```bash
-VITE_PRODUCT_SLUG=field-time-invoice-proof
-VITE_BILLING_BASE=https://pilot-api.sociobot.in
-```
+Export a JSON backup before clearing browser data or moving devices. See the built app’s `/privacy/` and `/terms/` pages.
 
-No payment provider is embedded. Checkout and license verification use the Sociobot billing API.
+## Deploy
 
-## Privacy and limitations
+Run `npm run build`, then deploy the contents of `dist/` as a static site. `staticwebapp.config.json` supplies routes, security headers, MIME types, immutable asset caching, and the 404 response.
 
-Receipts are explicitly self-reported; they are not independent proof, invoices, or surveillance records. Clearing browser site data removes local records, so export backups regularly. See `/privacy/` and `/terms/` in the built app.
-
-## Deployment
-
-Deploy the contents of `dist/` as a static site. Configure clean directory URLs so `/privacy/` and `/terms/` resolve to their respective `index.html` files. No server or secret is required.
-
-MIT licensed. The generated hero image provenance is documented in `.factory/design.md` and `assets/src/hero-notebook.json`.
+The project is MIT licensed. Image provenance is documented in `.factory/design.md` and `assets/src/hero-notebook.json`.

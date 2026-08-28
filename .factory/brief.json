@@ -1,0 +1,37 @@
+{
+  "product": "Work Receipt",
+  "slug": "field-time-invoice-proof",
+  "artifact_class": "pwa-offline",
+  "primary_user": "Independent hourly workers whose billable work includes research, review, waiting, and judgment.",
+  "job_to_be_done": "Record work sessions and turn a week into a client-readable, self-reported receipt without surveillance.",
+  "problem": "Activity trackers miss valuable thinking work and collect more detail than clients need. Workers need a credible explanation of time without pretending it is independent proof.",
+  "constraints": [
+    "Work-session data stays on the current device.",
+    "The core workflow works offline after the first visit.",
+    "Receipts always identify the record as self-reported.",
+    "Evidence links are optional and never fetched by the app.",
+    "Users can export and import their own data.",
+    "A demo never reads or writes the real-data namespace."
+  ],
+  "scope": [
+    "Timed and manual work sessions",
+    "Project, outcome, interruption, optional evidence link, and AI-assisted disclosure",
+    "Weekly receipt preview and PDF download",
+    "JSON backup and import",
+    "CSV export",
+    "Installable offline PWA",
+    "Isolated sample-data demo"
+  ],
+  "not_in_scope": [
+    "Activity monitoring, screenshot capture, or keystroke logging",
+    "Independent verification of work",
+    "Cloud accounts or synchronization",
+    "Automated invoicing or payment collection",
+    "Runtime AI generation"
+  ],
+  "leverage_decisions": {
+    "ai": "Not added. The job is accurate self-reporting; generated claims about completed work would reduce trust.",
+    "import_export": "Required so local records remain portable.",
+    "sync": "Excluded to preserve the local-only privacy boundary."
+  }
+}

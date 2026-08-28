@@ -1,12 +1,7 @@
 import './styles.css'
-import { allSessions, db, defaultSettings, getActiveTimer, getSettings, setActiveTimer } from './db'
+import { allSessions, db, defaultSettings, getActiveTimer, getSettings, isDemoMode, setActiveTimer } from './db'
 import { durationMinutes, formatDuration, sessionsInRange, toLocalInput, validateSession, weekBounds } from './time'
 import type { ActiveTimer, ExportBundle, Settings, WorkSession } from './types'
-
-const PRODUCT_SLUG = import.meta.env.VITE_PRODUCT_SLUG || 'field-time-invoice-proof'
-const BILLING_BASE = import.meta.env.VITE_BILLING_BASE || 'https://api.sociobot.in'
-const LICENSE_KEY = `sb_license:${PRODUCT_SLUG}`
-const VERDICT_KEY = `${LICENSE_KEY}:verdict`
 
 const state: {
   sessions: WorkSession[]
@@ -15,7 +10,6 @@ const state: {
   now: number
   filter: string
   weekOffset: number
-  licensed: boolean
 } = {
   sessions: [],
   settings: defaultSettings,
@@ -23,60 +17,72 @@ const state: {
   now: Date.now(),
   filter: '',
   weekOffset: 0,
-  licensed: false,
 }
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
 app.innerHTML = `
+  <div id="route-announcer" class="visually-hidden" role="status" aria-live="polite"></div>
+  ${isDemoMode ? `<div class="demo-banner" role="status"><strong>Demo — sample data, nothing is saved</strong><span>Changes stay separate from your records.</span><div><button class="text-button" id="reset-demo" type="button">Reset demo</button><a href="/" id="start-real">Start for real</a></div></div>` : ''}
   <header class="site-header">
     <a class="brand" href="/" aria-label="Work Receipt home">
       <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
       <span>Work Receipt</span>
     </a>
+    <nav class="header-nav" aria-label="Primary navigation">
+      <a href="/demo">Demo</a>
+      <a href="/privacy/">Privacy</a>
+    </nav>
     <div class="header-actions">
       <span id="connection-status" class="connection" role="status"></span>
-      <button class="text-button" id="open-license" type="button">Studio unlock</button>
     </div>
   </header>
   <main id="main">
     <section class="intro" aria-labelledby="page-title">
       <div class="intro-copy">
-        <p class="eyebrow">Private field notes for billable work</p>
-        <h1 id="page-title">Show the work.<br><em>Keep your privacy.</em></h1>
-        <p class="lede">Record what happened, account for interruptions, and make a clear weekly PDF for your client. No screenshots. No keystrokes. Nothing leaves this device.</p>
-        <div class="trust-line"><span aria-hidden="true">✓</span> Self-reported by design</div>
+        <p class="eyebrow">Work sessions for independent workers</p>
+        <h1 id="page-title">Turn freelance time into a client receipt</h1>
+        <p class="lede">For independent workers who need to explain billable time without activity tracking.</p>
+        <div class="hero-actions">
+          <a class="button" href="/demo">Try it with sample data</a>
+          <span>Opens a sample weekly receipt.</span>
+        </div>
+        <ul class="plain-facts" aria-label="Product facts">
+          <li>Records stay in this browser.</li>
+          <li>Saved work sessions open offline.</li>
+          <li>Recording and exports are free.</li>
+        </ul>
       </div>
       <figure class="hero-figure">
         <picture>
           <source type="image/webp" srcset="/assets/hero-notebook-720.webp 720w, /assets/hero-notebook-1200.webp 1200w" sizes="(max-width: 760px) 100vw, 46vw" />
           <img src="/assets/hero-notebook-1200.webp" width="1200" height="800" alt="Open field notebook beside a stopwatch, fountain pen and small spark token" fetchpriority="high" decoding="async" />
         </picture>
-        <figcaption>Your record is a statement of work, not surveillance.</figcaption>
+        <figcaption>A weekly receipt is self-reported, not independent proof.</figcaption>
       </figure>
     </section>
 
     <section class="workbench" aria-labelledby="log-title">
-      <aside class="timer-panel" aria-labelledby="timer-title">
-        <p class="folio">FIELD TIMER · LOCAL ONLY</p>
-        <h2 id="timer-title">Keep a time note</h2>
+      <div class="timer-panel" aria-labelledby="timer-title">
+        <p class="folio">WORK SESSION TIMER</p>
+        <h2 id="timer-title">Start a work session</h2>
         <div id="timer-view"></div>
         <div class="privacy-note">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm0 4v12m-4-7 2.4 2.4L16 8"/></svg>
-          <p><strong>No activity capture.</strong><br>Your notes and evidence links stay in this browser.</p>
+          <p><strong>No activity capture.</strong><br>Work sessions and evidence links stay in this browser.</p>
         </div>
-      </aside>
+      </div>
 
       <div class="notebook">
         <div class="section-heading">
           <div>
-            <p class="folio">WORK LOG</p>
-            <h2 id="log-title">Recent field notes</h2>
+            <p class="folio">WORK SESSIONS</p>
+            <h2 id="log-title">Recent work sessions</h2>
           </div>
-          <button class="button button-secondary" id="add-session" type="button"><span aria-hidden="true">＋</span> Add manually</button>
+          <button class="button button-secondary" id="add-session" type="button"><span aria-hidden="true">＋</span> Add a work session</button>
         </div>
         <div class="log-tools">
-          <label for="project-filter">Filter notes</label>
+          <label for="project-filter">Filter work sessions</label>
           <select id="project-filter"><option value="">All projects</option></select>
         </div>
         <div id="session-list" aria-live="polite"></div>
@@ -85,36 +91,44 @@ app.innerHTML = `
 
     <section class="receipt-strip" aria-labelledby="receipt-title">
       <div>
-        <p class="eyebrow">Ready for invoice day</p>
-        <h2 id="receipt-title">Turn the week into a receipt.</h2>
-        <p>A calm, client-readable PDF with outcomes, time, interruptions, and only the evidence you chose to share.</p>
+        <h2 id="receipt-title">Create a weekly client receipt</h2>
+        <p>Create a weekly PDF that lists outcomes, time, interruptions, and selected evidence.</p>
       </div>
       <button class="button button-paper" id="open-receipt" type="button">Prepare weekly receipt <span aria-hidden="true">→</span></button>
     </section>
 
     <section class="ownership" aria-labelledby="ownership-title">
       <div>
-        <p class="folio">YOUR DATA, YOUR EXIT</p>
-        <h2 id="ownership-title">A notebook with an open back cover.</h2>
-        <p>Back up everything as JSON or take a spreadsheet-friendly CSV. Import a backup on another device whenever you need it.</p>
+        <h2 id="ownership-title">Back up or restore your work sessions</h2>
+        <p>Download a JSON backup or CSV file. Import a JSON backup on another device.</p>
       </div>
       <div class="ownership-actions">
         <button class="text-button" id="export-json" type="button">Export backup (.json)</button>
-        <button class="text-button" id="export-csv" type="button">Export sessions (.csv)</button>
+        <button class="text-button" id="export-csv" type="button">Export work sessions (.csv)</button>
         <label class="text-button file-label" for="import-json">Import backup</label>
         <input class="visually-hidden" id="import-json" type="file" accept="application/json,.json" />
       </div>
     </section>
+
+    <section class="how-it-works" aria-labelledby="how-title">
+      <h2 id="how-title">How it works</h2>
+      <ol><li><strong>Record a work session.</strong><span>Add the outcome, time, break, and optional evidence link.</span></li><li><strong>Review the week.</strong><span>Check each self-reported work session before sharing it.</span></li><li><strong>Download the receipt.</strong><span>Save a PDF for your client and a backup for yourself.</span></li></ol>
+    </section>
+
+    <section class="limits" aria-labelledby="limits-title">
+      <h2 id="limits-title">What Work Receipt does not do</h2>
+      <p>It does not watch activity, capture screens, or verify that work happened. A weekly receipt records what you enter.</p>
+    </section>
   </main>
   <footer>
-    <p><strong>Work Receipt</strong> · local-first, self-reported work records.</p>
-    <nav aria-label="Legal and product links"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><button class="linklike" id="footer-license" type="button">License</button></nav>
-    <p class="fine-print">Still-life artwork generated for this product with Azure OpenAI. No client data is used in the image.</p>
+    <p><strong>Work Receipt</strong> · self-reported work sessions stored in this browser.</p>
+    <nav aria-label="Legal and product links"><a href="/demo">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span></nav>
+    <p class="fine-print">Original generated still-life artwork · Build 1.1.0</p>
   </footer>
 
   <dialog id="session-dialog" aria-labelledby="session-dialog-title">
     <form id="session-form" method="dialog">
-      <div class="dialog-head"><div><p class="folio">FIELD NOTE</p><h2 id="session-dialog-title">Add a session</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close session form">×</button></div>
+      <div class="dialog-head"><div><p class="folio">WORK SESSION</p><h2 id="session-dialog-title">Add a work session</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close session form">×</button></div>
       <input id="session-id" type="hidden" />
       <div class="form-grid two">
         <label>Project <span aria-hidden="true">*</span><input id="session-project" required maxlength="80" autocomplete="organization-title" /></label>
@@ -126,28 +140,24 @@ app.innerHTML = `
         <label>Ended <input id="session-end" type="datetime-local" required /></label>
       </div>
       <label>Evidence link <span class="hint">optional, http(s) only</span><input id="session-evidence" type="url" inputmode="url" placeholder="https://github.com/…" /></label>
-      <label class="check-label"><input id="session-ai" type="checkbox" /><span><strong>AI-assisted work</strong><small>Marks the note transparently; it never reduces billable time.</small></span></label>
+        <label class="check-label"><input id="session-ai" type="checkbox" /><span><strong>AI-assisted work</strong><small>Marks the work session clearly; it never reduces billable time.</small></span></label>
       <p id="session-error" class="form-error" role="alert"></p>
-      <div class="dialog-actions"><button class="text-button close-dialog" type="button">Cancel</button><button class="button" type="submit">Save field note</button></div>
+      <div class="dialog-actions"><button class="text-button close-dialog" type="button">Cancel</button><button class="button" type="submit">Save work session</button></div>
     </form>
   </dialog>
 
   <dialog id="receipt-dialog" class="wide-dialog" aria-labelledby="receipt-dialog-title">
+    ${isDemoMode ? `<div class="dialog-demo-banner"><strong>Demo — sample data, nothing is saved</strong><div><button class="text-button reset-demo-control" type="button">Reset demo</button><a href="/" class="start-real-control">Start for real</a></div></div>` : ''}
     <div class="dialog-head"><div><p class="folio">CLIENT COPY</p><h2 id="receipt-dialog-title">Prepare weekly receipt</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close receipt preview">×</button></div>
     <div class="week-picker"><button class="icon-button" id="prev-week" aria-label="Previous week">←</button><strong id="week-label"></strong><button class="icon-button" id="next-week" aria-label="Next week">→</button></div>
     <label>Client or recipient <input id="receipt-client" maxlength="100" placeholder="Client name" /></label>
     <div id="receipt-preview" class="receipt-preview"></div>
-    <div class="dialog-actions"><button class="text-button close-dialog" type="button">Close</button><button class="button" id="download-pdf" type="button">Download PDF</button></div>
-  </dialog>
-
-  <dialog id="license-dialog" aria-labelledby="license-title">
-    <div class="dialog-head"><div><p class="folio">ONE-TIME UNLOCK</p><h2 id="license-title">Make it unmistakably yours</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close Studio unlock">×</button></div>
-    <div id="license-state"></div>
+    <div class="dialog-actions"><button class="text-button" id="open-settings" type="button">Edit receipt details</button><button class="text-button close-dialog" type="button">Close</button><button class="button" id="download-pdf" type="button">Download PDF</button></div>
   </dialog>
 
   <dialog id="settings-dialog" aria-labelledby="settings-title">
     <form id="settings-form" method="dialog">
-      <div class="dialog-head"><div><p class="folio">STUDIO DETAILS</p><h2 id="settings-title">Receipt identity</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close receipt identity">×</button></div>
+      <div class="dialog-head"><div><p class="folio">RECEIPT DETAILS</p><h2 id="settings-title">Receipt identity</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close receipt identity">×</button></div>
       <label>Your name <input id="settings-name" maxlength="100" /></label>
       <label>Business or studio <input id="settings-business" maxlength="100" /></label>
       <label>Default client <input id="settings-client" maxlength="100" /></label>
@@ -187,7 +197,7 @@ function renderTimer(): void {
         <label>Working toward <textarea id="timer-outcome" maxlength="500" required rows="3" placeholder="A client-readable outcome"></textarea></label>
         <label>Evidence link <span class="hint">optional</span><input id="timer-evidence" type="url" placeholder="https://…" /></label>
         <label class="check-label compact"><input id="timer-ai" type="checkbox" /><span>AI-assisted</span></label>
-        <button class="button timer-button" type="submit"><span aria-hidden="true">▶</span> Start session</button>
+        <button class="button timer-button" type="submit"><span aria-hidden="true">▶</span> Start work session</button>
       </form>`
     $('#timer-form').addEventListener('submit', startTimer)
     return
@@ -258,7 +268,7 @@ function renderSessions(): void {
   const sessions = state.sessions.filter((s) => !selected || s.project === selected)
   const container = $('#session-list')
   if (!sessions.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-mark" aria-hidden="true">↳</div><h3>${selected ? 'No notes for this project' : 'Your first note starts here'}</h3><p>${selected ? 'Choose another project or add a session.' : 'Start the field timer or add work you already completed. Every save appears here immediately.'}</p><button class="text-button" id="empty-add" type="button">Add a field note →</button></div>`
+    container.innerHTML = `<div class="empty-state"><div class="empty-mark" aria-hidden="true">↳</div><h3>${selected ? 'No work sessions for this project' : 'Add your first work session'}</h3><p>${selected ? 'Choose another project or add a work session.' : 'Start the timer or add a completed work session.'}</p><button class="text-button" id="empty-add" type="button">Add a work session →</button></div>`
     $('#empty-add').addEventListener('click', () => openSessionDialog())
     return
   }
@@ -295,7 +305,7 @@ function openSessionDialog(id?: string): void {
   const end = new Date()
   end.setSeconds(0, 0)
   const start = new Date(end.getTime() - 60 * 60 * 1000)
-  ;($('#session-dialog-title')).textContent = session ? 'Edit session' : 'Add a session'
+  ;($('#session-dialog-title')).textContent = session ? 'Edit work session' : 'Add a work session'
   ;($('#session-id') as HTMLInputElement).value = session?.id ?? ''
   ;($('#session-project') as HTMLInputElement).value = session?.project ?? state.filter
   ;($('#session-outcome') as HTMLTextAreaElement).value = session?.outcome ?? ''
@@ -332,7 +342,7 @@ async function saveSession(event: Event): Promise<void> {
   await db.sessions.put(session)
   ;($('#session-dialog') as HTMLDialogElement).close()
   await refreshSessions()
-  showToast(existing ? 'Field note updated' : 'Field note saved on this device')
+  showToast(existing ? 'Work session updated' : 'Work session saved on this device')
 }
 
 async function deleteSession(id: string): Promise<void> {
@@ -352,10 +362,10 @@ function renderReceipt(): void {
   const total = sessions.reduce((sum, s) => sum + durationMinutes(s), 0)
   const projects = [...new Set(sessions.map((s) => s.project))]
   $('#receipt-preview').innerHTML = `
-    <div class="receipt-letterhead"><div><span class="receipt-logo">WR</span><strong>${escapeHtml(state.licensed && state.settings.businessName ? state.settings.businessName : 'Work Receipt')}</strong></div><span>SELF-REPORTED WORK RECORD</span></div>
+    <div class="receipt-letterhead"><div><span class="receipt-logo">WR</span><strong>${escapeHtml(state.settings.businessName || 'Work Receipt')}</strong></div><span>SELF-REPORTED WORK RECEIPT</span></div>
     <div class="receipt-to"><div><small>PREPARED FOR</small><strong>${escapeHtml((($('#receipt-client') as HTMLInputElement).value || 'Client copy'))}</strong></div><div><small>TOTAL TIME</small><strong>${formatDuration(total)}</strong></div></div>
-    ${sessions.length ? `<ol>${sessions.map((s) => `<li><div><strong>${escapeHtml(s.outcome)}</strong><span>${escapeHtml(s.project)} · ${dateFormat.format(new Date(s.startedAt))}${s.aiAssisted ? ' · AI-assisted' : ''}${s.interruptionMinutes ? ` · ${s.interruptionMinutes}m break excluded` : ''}</span></div><b>${formatDuration(durationMinutes(s))}</b></li>`).join('')}</ol>` : '<div class="receipt-empty"><strong>No sessions in this week.</strong><span>Choose an earlier week or close this preview and add a note.</span></div>'}
-    <div class="receipt-foot"><span>${projects.length} project${projects.length === 1 ? '' : 's'} · ${sessions.length} session${sessions.length === 1 ? '' : 's'}</span><p>${escapeHtml(state.licensed ? state.settings.receiptNote : defaultSettings.receiptNote)}</p></div>`
+    ${sessions.length ? `<ol>${sessions.map((s) => `<li><div><strong>${escapeHtml(s.outcome)}</strong><span>${escapeHtml(s.project)} · ${dateFormat.format(new Date(s.startedAt))}${s.aiAssisted ? ' · AI-assisted' : ''}${s.interruptionMinutes ? ` · ${s.interruptionMinutes}m break excluded` : ''}${safeUrl(s.evidence) ? ' · Evidence included' : ''}</span></div><b>${formatDuration(durationMinutes(s))}</b></li>`).join('')}</ol>` : '<div class="receipt-empty"><strong>No work sessions in this week.</strong><span>Choose an earlier week or close this preview and add a work session.</span></div>'}
+    <div class="receipt-foot"><span>${projects.length} project${projects.length === 1 ? '' : 's'} · ${sessions.length} work session${sessions.length === 1 ? '' : 's'}</span><p>${escapeHtml(state.settings.receiptNote)}</p></div>`
   ;($('#download-pdf') as HTMLButtonElement).disabled = !sessions.length
 }
 
@@ -375,7 +385,7 @@ async function downloadPdf(): Promise<void> {
   const client = ($('#receipt-client') as HTMLInputElement).value.trim() || 'Client copy'
   const total = sessions.reduce((sum, s) => sum + durationMinutes(s), 0)
   const endLabel = new Date(end); endLabel.setDate(endLabel.getDate() - 1)
-  const brand = state.licensed && state.settings.businessName ? state.settings.businessName : 'Work Receipt'
+  const brand = state.settings.businessName || 'Work Receipt'
   doc.setFillColor(244, 238, 220); doc.rect(0, 0, 595, 842, 'F')
   doc.setFillColor(255, 253, 246); doc.roundedRect(36, 36, 523, 770, 4, 4, 'F')
   doc.setDrawColor(23, 107, 100); doc.setLineWidth(2); doc.line(64, 92, 531, 92)
@@ -399,7 +409,7 @@ async function downloadPdf(): Promise<void> {
     if (safeUrl(session.evidence)) { doc.setTextColor(23, 107, 100); doc.textWithLink('Evidence link', 96, metaY + 13, { url: safeUrl(session.evidence) }); y = metaY + 42 } else y = metaY + 29
     doc.setDrawColor(199, 209, 198); doc.setLineWidth(.5); doc.line(64, y - 12, 531, y - 12)
   })
-  const note = state.licensed ? state.settings.receiptNote : defaultSettings.receiptNote
+  const note = state.settings.receiptNote
   doc.setTextColor(75, 87, 82); doc.setFont('times', 'italic'); doc.setFontSize(9); doc.text(doc.splitTextToSize(note, 430), 64, Math.min(y + 18, 770))
   doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.text(`Generated locally with Work Receipt · ${new Date().toLocaleDateString()}`, 64, 788)
   doc.save(`work-receipt-${start.toISOString().slice(0, 10)}.pdf`)
@@ -443,46 +453,7 @@ async function importJson(event: Event): Promise<void> {
   finally { input.value = '' }
 }
 
-function cachedLicense(): boolean {
-  const token = localStorage.getItem(LICENSE_KEY)
-  if (!token) return false
-  try { const verdict = JSON.parse(localStorage.getItem(VERDICT_KEY) || '{}'); return verdict.valid === true } catch { return false }
-}
-
-async function verifyLicense(force = false): Promise<void> {
-  const token = localStorage.getItem(LICENSE_KEY)
-  if (!token) { state.licensed = false; renderLicense(); return }
-  let verdict: { valid?: boolean; checkedAt?: number } = {}
-  try { verdict = JSON.parse(localStorage.getItem(VERDICT_KEY) || '{}') } catch { /* ignore */ }
-  state.licensed = verdict.valid === true
-  renderLicense()
-  if (!navigator.onLine || (!force && verdict.checkedAt && Date.now() - verdict.checkedAt < 86_400_000)) return
-  try {
-    const response = await fetch(`${BILLING_BASE}/api/v1/products/${PRODUCT_SLUG}/verify?license=${encodeURIComponent(token)}`)
-    if (!response.ok) throw new Error('verify unavailable')
-    const result = await response.json() as { valid: boolean; reason: string }
-    localStorage.setItem(VERDICT_KEY, JSON.stringify({ valid: result.valid, reason: result.reason, checkedAt: Date.now() }))
-    state.licensed = result.valid
-    renderLicense()
-    if (!result.valid) showToast('Studio license is no longer active')
-  } catch { /* cached verdict remains; free app is never blocked */ }
-}
-
-function renderLicense(): void {
-  const target = $('#license-state')
-  if (state.licensed) {
-    target.innerHTML = `<div class="license-active"><span class="stamp">UNLOCKED</span><h3>Studio details are active.</h3><p>Add your name, business identity, default client, and closing note to every receipt.</p><button class="button" id="open-settings" type="button">Edit receipt identity</button><button class="text-button" id="remove-license" type="button">Remove license from this device</button></div>`
-    $('#open-settings').addEventListener('click', openSettings)
-    $('#remove-license').addEventListener('click', () => { if (confirm('Remove this license from this device? Your work notes will not be affected.')) { localStorage.removeItem(LICENSE_KEY); localStorage.removeItem(VERDICT_KEY); state.licensed = false; renderLicense() } })
-  } else {
-    target.innerHTML = `<p class="license-price"><strong>$19</strong> once</p><p>Core recording, weekly PDFs, and data exports are free. Studio unlock adds your business identity, default client, and custom receipt note. No subscription.</p><a class="button buy-link" href="${BILLING_BASE}/api/v1/products/${PRODUCT_SLUG}/checkout">Buy Studio unlock</a><hr><form id="restore-form"><label>Have a license? Paste it here<input id="license-token" required autocomplete="off" /></label><p id="license-error" class="form-error" role="alert"></p><button class="button button-secondary" type="submit">Verify license</button></form><p class="fine-print">Sociobot / Dodo is the merchant of record. Refunds are handled there and revoke the license. See <a href="/terms/">terms</a> and <a href="/privacy/">privacy</a>.</p>`
-    $('#restore-form').addEventListener('submit', async (event) => { event.preventDefault(); const token = ($('#license-token') as HTMLInputElement).value.trim(); if (!token) return; localStorage.setItem(LICENSE_KEY, token); localStorage.removeItem(VERDICT_KEY); await verifyLicense(true); if (!state.licensed) $('#license-error').textContent = 'That license could not be verified. Check the token and try again.' })
-  }
-  $('#open-license').textContent = state.licensed ? 'Studio · unlocked' : 'Studio unlock'
-}
-
 function openSettings(): void {
-  ;($('#license-dialog') as HTMLDialogElement).close()
   ;($('#settings-name') as HTMLInputElement).value = state.settings.freelancerName
   ;($('#settings-business') as HTMLInputElement).value = state.settings.businessName
   ;($('#settings-client') as HTMLInputElement).value = state.settings.defaultClient
@@ -510,10 +481,10 @@ function setupEvents(): void {
   $('#export-csv').addEventListener('click', exportCsv)
   $('#import-json').addEventListener('change', importJson)
   $('#settings-form').addEventListener('submit', saveSettings)
-  ;['#open-license', '#footer-license'].forEach((selector) => $(selector).addEventListener('click', () => { renderLicense(); ($('#license-dialog') as HTMLDialogElement).showModal() }))
+  $('#open-settings').addEventListener('click', openSettings)
   document.querySelectorAll<HTMLButtonElement>('.close-dialog').forEach((button) => button.addEventListener('click', () => (button.closest('dialog') as HTMLDialogElement).close()))
   document.querySelectorAll<HTMLDialogElement>('dialog').forEach((dialog) => dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close() }))
-  window.addEventListener('online', () => { setConnectionStatus(); verifyLicense() })
+  window.addEventListener('online', setConnectionStatus)
   window.addEventListener('offline', setConnectionStatus)
 }
 
@@ -528,16 +499,68 @@ async function registerServiceWorker(): Promise<void> {
   } catch { /* the app remains fully usable without install support */ }
 }
 
-async function init(): Promise<void> {
-  const returnedLicense = new URLSearchParams(location.search).get('license')
-  if (returnedLicense) {
-    localStorage.setItem(LICENSE_KEY, returnedLicense); localStorage.removeItem(VERDICT_KEY)
-    const url = new URL(location.href); url.searchParams.delete('license'); history.replaceState({}, '', url.pathname + url.search + url.hash)
+function demoDate(dayOffset: number, hour: number, minute: number): Date {
+  const date = new Date()
+  const day = date.getDay() || 7
+  date.setDate(date.getDate() - day + 1 + dayOffset)
+  date.setHours(hour, minute, 0, 0)
+  return date
+}
+
+async function seedDemo(force = false): Promise<void> {
+  if (!isDemoMode) return
+  if (force) {
+    await db.transaction('rw', db.sessions, db.settings, async () => {
+      await db.sessions.clear()
+      await db.settings.clear()
+    })
+    setActiveTimer(null)
   }
-  state.licensed = cachedLicense()
+  if (await db.sessions.count()) return
+  const samples: WorkSession[] = [
+    { id: 'demo-discovery', project: 'Northwind website', outcome: 'Mapped checkout errors and agreed on the revised purchase flow.', evidence: 'https://example.com/review-notes', aiAssisted: false, interruptionMinutes: 15, startedAt: demoDate(0, 9, 0).toISOString(), endedAt: demoDate(0, 11, 15).toISOString(), createdAt: demoDate(0, 11, 15).toISOString(), updatedAt: demoDate(0, 11, 15).toISOString() },
+    { id: 'demo-copy', project: 'Northwind website', outcome: 'Rewrote the checkout guidance and prepared two review options.', evidence: '', aiAssisted: true, interruptionMinutes: 20, startedAt: demoDate(1, 13, 0).toISOString(), endedAt: demoDate(1, 16, 20).toISOString(), createdAt: demoDate(1, 16, 20).toISOString(), updatedAt: demoDate(1, 16, 20).toISOString() },
+    { id: 'demo-release', project: 'Harbor research', outcome: 'Delivered the interview summary and the next-round research plan.', evidence: 'https://example.com/research-summary', aiAssisted: false, interruptionMinutes: 0, startedAt: demoDate(2, 10, 0).toISOString(), endedAt: demoDate(2, 12, 30).toISOString(), createdAt: demoDate(2, 12, 30).toISOString(), updatedAt: demoDate(2, 12, 30).toISOString() },
+  ]
+  await db.transaction('rw', db.sessions, db.settings, async () => {
+    await db.sessions.bulkPut(samples)
+    await db.settings.put({ ...defaultSettings, businessName: 'Mira Chen · Product Writing', defaultClient: 'Northwind Studio', updatedAt: new Date().toISOString() })
+  })
+}
+
+async function init(): Promise<void> {
+  if (isDemoMode) await seedDemo()
   try { [state.sessions, state.settings] = await Promise.all([allSessions(), getSettings()]) }
   catch { showToast('Local storage could not be opened. Check private browsing settings.') }
-  setupEvents(); renderTimer(); renderSessions(); renderLicense(); setConnectionStatus(); verifyLicense(); registerServiceWorker()
+  setupEvents(); renderTimer(); renderSessions(); setConnectionStatus(); registerServiceWorker()
+  if (isDemoMode) {
+    document.title = 'Demo — Work Receipt'
+    document.querySelector<HTMLLinkElement>('link[rel="canonical"]')!.href = 'https://field-time-invoice-proof.sociobot.in/demo'
+    document.querySelector<HTMLMetaElement>('meta[property="og:url"]')!.content = 'https://field-time-invoice-proof.sociobot.in/demo'
+    document.querySelector<HTMLMetaElement>('meta[property="og:title"]')!.content = 'Demo — Work Receipt'
+    document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')!.content = 'Demo — Work Receipt'
+    const heading = $('#page-title') as HTMLElement
+    heading.tabIndex = -1
+    heading.focus()
+    $('#route-announcer').textContent = 'Demo — Work Receipt'
+    const resetDemo = async () => {
+      await seedDemo(true)
+      state.settings = await getSettings()
+      await refreshSessions()
+      ;($('#receipt-dialog') as HTMLDialogElement).close()
+      openReceipt()
+      showToast('Demo reset to the sample week')
+    }
+    const startReal = async () => {
+      await db.delete()
+      setActiveTimer(null)
+    }
+    $('#reset-demo').addEventListener('click', resetDemo)
+    document.querySelectorAll<HTMLButtonElement>('.reset-demo-control').forEach((control) => control.addEventListener('click', resetDemo))
+    $('#start-real').addEventListener('click', startReal)
+    document.querySelectorAll<HTMLAnchorElement>('.start-real-control').forEach((control) => control.addEventListener('click', startReal))
+    window.setTimeout(openReceipt, 0)
+  }
   window.setInterval(() => { if (state.timer) { state.now = Date.now(); renderTimer() } }, 1000)
 }
 
