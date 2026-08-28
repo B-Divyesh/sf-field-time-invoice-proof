@@ -123,7 +123,7 @@ app.innerHTML = `
   <footer>
     <p><strong>Work Receipt</strong> · self-reported work sessions stored in this browser.</p>
     <nav aria-label="Legal and product links"><a href="/demo">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span></nav>
-    <p class="fine-print">Original generated still-life artwork · Build 1.2.0</p>
+    <p class="fine-print">Original generated still-life artwork · Build 1.3.0</p>
   </footer>
 
   <dialog id="session-dialog" aria-labelledby="session-dialog-title">

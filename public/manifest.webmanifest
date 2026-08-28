@@ -3,7 +3,7 @@
   "short_name": "Work Receipt",
   "description": "Record freelance work sessions and create a self-reported weekly PDF for clients.",
   "id": "/?source=pwa",
-  "start_url": "/?v=6",
+  "start_url": "/?v=7",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f4eedc",

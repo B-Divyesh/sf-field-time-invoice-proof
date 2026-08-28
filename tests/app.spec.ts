@@ -114,6 +114,21 @@ test('serves complete route-specific metadata and a configured real 404', async 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
 })
 
+test('uses the standard header shell on every shipped HTML route', async ({ page }) => {
+  const routes = ['/', '/demo', '/privacy/', '/terms/', '/404.html', '/offline.html', '/sample-evidence/checkout-review.html', '/sample-evidence/research-summary.html']
+  for (const route of routes) {
+    await page.goto(route)
+    const header = page.locator('.site-header')
+    const brand = header.locator('.brand')
+    const navigation = header.getByRole('navigation', { name: 'Primary navigation' })
+    await expect(brand, `${route} wordmark`).toHaveAttribute('href', '/')
+    await expect(brand, `${route} wordmark`).toHaveText('Work Receipt')
+    await expect(navigation.locator('a'), `${route} header links`).toHaveCount(2)
+    await expect(navigation.getByRole('link', { name: 'Demo', exact: true })).toHaveAttribute('href', '/demo')
+    await expect(navigation.getByRole('link', { name: 'Privacy', exact: true })).toHaveAttribute('href', '/privacy/')
+  }
+})
+
 test('crawls every product link without a dead destination', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile', 'Link crawl runs once')
   const paths = new Set<string>()

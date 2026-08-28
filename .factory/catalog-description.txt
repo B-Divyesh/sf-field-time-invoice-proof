@@ -1,1 +1,1 @@
-Turn freelance time into a private, self-reported weekly client receipt.
+Record billable work sessions and create a self-reported weekly client receipt.

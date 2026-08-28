@@ -37,7 +37,7 @@ Audited 2026-08-28 against the rendered home, empty, demo, dialog, legal, recove
 | 10 | It does not request screen, camera, microphone, or location access. | `no-device-capture`. |
 | 12 | A weekly receipt records what you enter; it is not independent proof. | `self-reported`. |
 | 10 | Work Receipt · self-reported work sessions stored in this browser. | `local-privacy`, `self-reported`. |
-| 7 | Original generated still-life artwork · Build 1.2.0 | Provenance and build label. |
+| 7 | Original generated still-life artwork · Build 1.3.0 | Provenance and build label. |
 
 ## Demo, dialogs, and feedback
 
@@ -89,6 +89,7 @@ Audited 2026-08-28 against the rendered home, empty, demo, dialog, legal, recove
 - No copy uses the banned marketing words.
 - The first screen names the job, audience, first action, next result, privacy boundary, offline prerequisite, and price.
 - Buttons use verbs; recovery headings name the actual state.
+- Catalog description: “Record billable work sessions and create a self-reported weekly client receipt.” (11 words, 79 characters, verb first.)
 
 ## Terminology
 

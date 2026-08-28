@@ -1,5 +1,5 @@
-const CACHE = 'work-receipt-shell-v6'
-const ASSET_CACHE = 'work-receipt-assets-v6'
+const CACHE = 'work-receipt-shell-v7'
+const ASSET_CACHE = 'work-receipt-assets-v7'
 const SHELL = ['/', '/demo', '/?demo=1', '/index.html', '/404.html', '/offline.html', '/legal.css', '/route-focus.js', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/apple-touch-icon.png', '/assets/hero-notebook-720.webp', '/assets/hero-notebook-1200.webp', '/assets/work-receipt-social.jpg', '/privacy/', '/terms/', '/sample-evidence/checkout-review.html', '/sample-evidence/research-summary.html']
 
 self.addEventListener('install', (event) => {
