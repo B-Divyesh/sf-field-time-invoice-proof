@@ -1,0 +1,14 @@
+{
+  "url": "https://field-time-invoice-proof.sociobot.in/offline.html",
+  "loadMs": 698,
+  "errors": [],
+  "a11y": {
+    "title": "Offline — Work Receipt",
+    "lang": "en",
+    "h1": 1,
+    "main": true,
+    "imgsMissingAlt": 0,
+    "buttonsUnlabeled": 0,
+    "textLength": 406
+  }
+}

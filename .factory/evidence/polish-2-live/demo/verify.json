@@ -1,0 +1,14 @@
+{
+  "url": "https://field-time-invoice-proof.sociobot.in/?demo=1",
+  "loadMs": 625,
+  "errors": [],
+  "a11y": {
+    "title": "Demo — Work Receipt",
+    "lang": "en",
+    "h1": 1,
+    "main": true,
+    "imgsMissingAlt": 0,
+    "buttonsUnlabeled": 0,
+    "textLength": 3115
+  }
+}
