@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { readFile } from 'node:fs/promises'
 
 test.beforeEach(async ({ page }) => { await page.goto('/') })
 
@@ -42,39 +43,131 @@ test('timer survives refresh and saves', async ({ page }) => {
   await expect(page.getByText('Resolved the release blocker')).toBeVisible()
 })
 
-test('has no accessibility violations', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name === 'mobile', 'Axe smoke runs once in desktop project')
-  const results = await new AxeBuilder({ page }).analyze()
-  expect(results.violations).toEqual([])
+test('has no accessibility violations on every shipped HTML route', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Full axe route scan runs once in desktop Chromium')
+  for (const route of ['/', '/demo', '/privacy/', '/terms/', '/404.html', '/offline.html', '/sample-evidence/checkout-review.html', '/sample-evidence/research-summary.html']) {
+    await page.goto(route)
+    const results = await new AxeBuilder({ page }).analyze()
+    expect(results.violations, `${route}: ${results.violations.map((item) => item.id).join(', ')}`).toEqual([])
+  }
 })
 
-test('fits a 390px viewport without horizontal overflow', async ({ page }, testInfo) => {
+test('fits home and demo in a 390px viewport without horizontal overflow', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'Mobile layout assertion')
-  const widths = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }))
-  expect(widths.scroll).toBe(widths.client)
+  for (const route of ['/', '/?demo=1']) {
+    await page.goto(route)
+    const widths = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }))
+    expect(widths.scroll, route).toBe(widths.client)
+  }
 })
 
-test('serves route-specific titles, metadata, legal links, and a real 404', async ({ page, request }) => {
-  await expect(page).toHaveTitle('Work Receipt — turn freelance time into a receipt')
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://field-time-invoice-proof.sociobot.in/')
-  await page.goto('/demo')
-  await expect(page).toHaveTitle('Demo — Work Receipt')
-  await page.goto('/privacy/')
-  await expect(page).toHaveTitle('Privacy — Work Receipt')
-  await expect(page.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms/')
-  await page.goto('/terms/')
-  await expect(page).toHaveTitle('Terms — Work Receipt')
+test('gives mobile navigation, recovery, and demo-exit controls 44px targets', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'Mobile touch-target assertion')
+  for (const route of ['/', '/demo', '/privacy/', '/terms/', '/404.html', '/offline.html']) {
+    await page.goto(route)
+    const selector = route === '/demo'
+      ? '.site-header .brand, .site-header nav a, footer nav a, .demo-banner a, .demo-banner button, .dialog-demo-banner a, .dialog-demo-banner button'
+      : '.site-header .brand, .site-header nav a, footer nav a, main > p:last-child > a'
+    const targets = page.locator(selector)
+    for (let index = 0; index < await targets.count(); index++) {
+      const target = targets.nth(index)
+      if (!(await target.isVisible())) continue
+      const box = await target.boundingBox()
+      expect(box, `${route} target ${index}`).not.toBeNull()
+      expect(box!.height, `${route} target ${index} height`).toBeGreaterThanOrEqual(44)
+      expect(box!.width, `${route} target ${index} width`).toBeGreaterThanOrEqual(44)
+    }
+  }
+})
+
+test('serves complete route-specific metadata and a configured real 404', async ({ page, request }) => {
+  const routes = [
+    { path: '/', title: 'Work Receipt — turn freelance time into a receipt', canonical: '/' },
+    { path: '/demo', title: 'Demo — Work Receipt', canonical: '/demo' },
+    { path: '/privacy/', title: 'Privacy — Work Receipt', canonical: '/privacy/' },
+    { path: '/terms/', title: 'Terms — Work Receipt', canonical: '/terms/' },
+    { path: '/404.html', title: 'Page not found — Work Receipt', canonical: '/404.html' },
+    { path: '/offline.html', title: 'Offline — Work Receipt', canonical: '/offline.html' },
+    { path: '/sample-evidence/checkout-review.html', title: 'Sample checkout review — Work Receipt', canonical: '/sample-evidence/checkout-review.html' },
+    { path: '/sample-evidence/research-summary.html', title: 'Sample research summary — Work Receipt', canonical: '/sample-evidence/research-summary.html' },
+  ]
+  for (const route of routes) {
+    await page.goto(route.path)
+    await expect(page).toHaveTitle(route.title)
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /\S/)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://field-time-invoice-proof.sociobot.in${route.canonical}`)
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', route.title)
+    await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', /\S/)
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', `https://field-time-invoice-proof.sociobot.in${route.canonical}`)
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /work-receipt-social\.jpg$/)
+    await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute('content', route.title)
+    await expect(page.locator('meta[name="twitter:description"]')).toHaveAttribute('content', /\S/)
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', /work-receipt-social\.jpg$/)
+    await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/icons/icon.svg')
+    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/icons/apple-touch-icon.png')
+  }
   expect((await request.get('/robots.txt')).status()).toBe(200)
   expect((await request.get('/sitemap.xml')).status()).toBe(200)
-  const missing = await request.get('/404.html')
-  expect(missing.status()).toBe(200)
-  expect(await missing.text()).toContain('This page is not in the notebook')
+  const config = JSON.parse(await readFile('public/staticwebapp.config.json', 'utf8'))
+  expect(config.responseOverrides['404'].rewrite).toBe('/404.html')
+  await page.goto('/404.html')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Page not found')
 })
 
-test('loads app shell while offline after first visit', async ({ page, context }) => {
+test('crawls every product link without a dead destination', async ({ page, request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Link crawl runs once')
+  const paths = new Set<string>()
+  for (const route of ['/', '/demo', '/privacy/', '/terms/', '/404.html', '/offline.html', '/sample-evidence/checkout-review.html', '/sample-evidence/research-summary.html']) {
+    await page.goto(route)
+    for (const href of await page.locator('a[href]').evaluateAll((links) => links.map((link) => (link as HTMLAnchorElement).href))) {
+      const url = new URL(href)
+      if (url.origin === new URL(page.url()).origin) paths.add(`${url.pathname}${url.search}`)
+    }
+  }
+  for (const path of paths) expect((await request.get(path)).status(), path).toBeLessThan(400)
+})
+
+test('focuses and announces route headings after forward and back navigation', async ({ page }) => {
+  const homeHeading = page.getByRole('heading', { level: 1 })
+  await expect(homeHeading).toBeFocused()
+  await page.locator('.header-nav').getByRole('link', { name: 'Demo' }).click()
+  const receipt = page.getByRole('dialog', { name: 'Prepare weekly receipt' })
+  await receipt.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
+  await expect(page.locator('#route-announcer')).toHaveText('Demo — Work Receipt')
+  await page.goBack()
+  await expect(page).toHaveURL('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
+  await expect(page.locator('#route-announcer')).toHaveText('Work Receipt — turn freelance time into a receipt')
+  await page.locator('.header-nav').getByRole('link', { name: 'Privacy' }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
+  await expect(page.locator('#route-announcer')).toHaveText('Privacy — Work Receipt')
+  await page.goBack()
+  await expect(page).toHaveURL('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
+})
+
+test('loads every route without console errors or inline CSP styling', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'Console and CSP route scan runs once')
+  const errors: string[] = []
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
+  for (const route of ['/', '/demo', '/privacy/', '/terms/', '/404.html', '/offline.html', '/sample-evidence/checkout-review.html', '/sample-evidence/research-summary.html']) {
+    errors.length = 0
+    await page.goto(route)
+    await page.waitForLoadState('networkidle')
+    expect(errors, route).toEqual([])
+    expect(await page.locator('style').count(), `${route} inline style blocks`).toBe(0)
+    expect(await page.locator('[style]').count(), `${route} inline style attributes`).toBe(0)
+  }
+})
+
+test('loads app shell and demo data offline after first visit', async ({ page, context }) => {
+  await page.goto('/demo')
+  await page.getByRole('dialog', { name: 'Prepare weekly receipt' }).getByRole('button', { name: 'Close', exact: true }).click()
   await page.waitForFunction(() => navigator.serviceWorker?.controller !== null)
   await context.setOffline(true)
   await page.reload()
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(page.locator('#session-list').getByText('Mapped checkout errors and agreed on the revised purchase flow.')).toBeVisible()
   await expect(page.getByText(/Offline · saving on this device/)).toBeVisible()
 })

@@ -9,7 +9,7 @@ const base: WorkSession = {
 }
 
 describe('work session time', () => {
-  it('subtracts explicitly declared interruptions', () => expect(durationMinutes(base)).toBe(75))
+  it('subtracts explicitly declared breaks', () => expect(durationMinutes(base)).toBe(75))
   it('formats billable duration compactly', () => expect(formatDuration(135)).toBe('2h 15m'))
   it('filters by a half-open date range', () => expect(sessionsInRange([base], new Date('2026-08-24'), new Date('2026-08-31'))).toEqual([base]))
 })

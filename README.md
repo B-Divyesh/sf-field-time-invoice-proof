@@ -18,10 +18,10 @@ The demo starts with three work sessions and an open weekly receipt. Its databas
 
 - A timer and manual entry for work sessions.
 - A self-reported weekly receipt and PDF download.
-- JSON backup and restore.
+- JSON backup and import.
 - CSV export with one row per work session.
 - Receipt name, client, and closing-note settings.
-- An installable app manifest and offline service worker.
+- Install the app and open saved work sessions offline after one visit.
 
 Recording, receipt details, PDFs, backup, import, and CSV export are free. There is no paid tier or embedded payment provider.
 
@@ -45,11 +45,11 @@ npm run build
 npm run test:e2e
 ```
 
-Each visitor-facing claim is listed in `.factory/claims.json`. Each has one tagged browser test. The production build is written to `dist/`.
+Claim checks are listed in `.factory/claims.json`. Each has one tagged browser test. The production build is written to `dist/`.
 
 ## Privacy and limits
 
-Work Receipt does not watch activity, capture screens, or verify completed work. Evidence links are stored as text and open only when selected.
+Work Receipt does not request screen, camera, microphone, or location access. It does not provide independent proof. Evidence links are stored as text and open only when selected.
 
 Export a JSON backup before clearing browser data or moving devices. See the built app’s `/privacy/` and `/terms/` pages.
 

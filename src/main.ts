@@ -44,12 +44,12 @@ app.innerHTML = `
         <h1 id="page-title">Turn freelance time into a client receipt</h1>
         <p class="lede">For independent workers who need to explain billable time without activity tracking.</p>
         <div class="hero-actions">
-          <a class="button" href="/demo">Try it with sample data</a>
+          <a class="button" href="/?demo=1">Try it with sample data</a>
           <span>Opens a sample weekly receipt.</span>
         </div>
         <ul class="plain-facts" aria-label="Product facts">
           <li>Records stay in this browser.</li>
-          <li>Saved work sessions open offline.</li>
+          <li>After your first visit, saved work sessions open offline.</li>
           <li>Recording and exports are free.</li>
         </ul>
       </div>
@@ -69,7 +69,7 @@ app.innerHTML = `
         <div id="timer-view"></div>
         <div class="privacy-note">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm0 4v12m-4-7 2.4 2.4L16 8"/></svg>
-          <p><strong>No activity capture.</strong><br>Work sessions and evidence links stay in this browser.</p>
+          <p><strong>You choose what to record.</strong><br>Work sessions and evidence links stay in this browser.</p>
         </div>
       </div>
 
@@ -92,14 +92,14 @@ app.innerHTML = `
     <section class="receipt-strip" aria-labelledby="receipt-title">
       <div>
         <h2 id="receipt-title">Create a weekly client receipt</h2>
-        <p>Create a weekly PDF that lists outcomes, time, interruptions, and selected evidence.</p>
+        <p>Create a weekly PDF that lists outcomes, time, breaks, and selected evidence.</p>
       </div>
       <button class="button button-paper" id="open-receipt" type="button">Prepare weekly receipt <span aria-hidden="true">→</span></button>
     </section>
 
     <section class="ownership" aria-labelledby="ownership-title">
       <div>
-        <h2 id="ownership-title">Back up or restore your work sessions</h2>
+        <h2 id="ownership-title">Back up or import your work sessions</h2>
         <p>Download a JSON backup or CSV file. Import a JSON backup on another device.</p>
       </div>
       <div class="ownership-actions">
@@ -117,13 +117,13 @@ app.innerHTML = `
 
     <section class="limits" aria-labelledby="limits-title">
       <h2 id="limits-title">What Work Receipt does not do</h2>
-      <p>It does not watch activity, capture screens, or verify that work happened. A weekly receipt records what you enter.</p>
+      <p>It does not request screen, camera, microphone, or location access. A weekly receipt records what you enter; it is not independent proof.</p>
     </section>
   </main>
   <footer>
     <p><strong>Work Receipt</strong> · self-reported work sessions stored in this browser.</p>
     <nav aria-label="Legal and product links"><a href="/demo">Demo</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><span>Built by Param Factory</span></nav>
-    <p class="fine-print">Original generated still-life artwork · Build 1.1.0</p>
+    <p class="fine-print">Original generated still-life artwork · Build 1.2.0</p>
   </footer>
 
   <dialog id="session-dialog" aria-labelledby="session-dialog-title">
@@ -132,7 +132,7 @@ app.innerHTML = `
       <input id="session-id" type="hidden" />
       <div class="form-grid two">
         <label>Project <span aria-hidden="true">*</span><input id="session-project" required maxlength="80" autocomplete="organization-title" /></label>
-        <label>Break / interruption <span class="hint">minutes</span><input id="session-break" type="number" min="0" step="1" value="0" inputmode="numeric" /></label>
+        <label>Break time <span class="hint">minutes</span><input id="session-break" type="number" min="0" step="1" value="0" inputmode="numeric" /></label>
       </div>
       <label>Outcome for the client <span aria-hidden="true">*</span><textarea id="session-outcome" required maxlength="500" rows="3"></textarea><span class="hint">Say what changed—not every keystroke.</span></label>
       <div class="form-grid two">
@@ -362,7 +362,7 @@ function renderReceipt(): void {
   const total = sessions.reduce((sum, s) => sum + durationMinutes(s), 0)
   const projects = [...new Set(sessions.map((s) => s.project))]
   $('#receipt-preview').innerHTML = `
-    <div class="receipt-letterhead"><div><span class="receipt-logo">WR</span><strong>${escapeHtml(state.settings.businessName || 'Work Receipt')}</strong></div><span>SELF-REPORTED WORK RECEIPT</span></div>
+    <div class="receipt-letterhead"><div><span class="receipt-logo">WR</span><span class="receipt-identity"><strong>${escapeHtml(state.settings.businessName || state.settings.freelancerName || 'Work Receipt')}</strong>${state.settings.businessName && state.settings.freelancerName ? `<small>${escapeHtml(state.settings.freelancerName)}</small>` : ''}</span></div><span>SELF-REPORTED WORK RECEIPT</span></div>
     <div class="receipt-to"><div><small>PREPARED FOR</small><strong>${escapeHtml((($('#receipt-client') as HTMLInputElement).value || 'Client copy'))}</strong></div><div><small>TOTAL TIME</small><strong>${formatDuration(total)}</strong></div></div>
     ${sessions.length ? `<ol>${sessions.map((s) => `<li><div><strong>${escapeHtml(s.outcome)}</strong><span>${escapeHtml(s.project)} · ${dateFormat.format(new Date(s.startedAt))}${s.aiAssisted ? ' · AI-assisted' : ''}${s.interruptionMinutes ? ` · ${s.interruptionMinutes}m break excluded` : ''}${safeUrl(s.evidence) ? ' · Evidence included' : ''}</span></div><b>${formatDuration(durationMinutes(s))}</b></li>`).join('')}</ol>` : '<div class="receipt-empty"><strong>No work sessions in this week.</strong><span>Choose an earlier week or close this preview and add a work session.</span></div>'}
     <div class="receipt-foot"><span>${projects.length} project${projects.length === 1 ? '' : 's'} · ${sessions.length} work session${sessions.length === 1 ? '' : 's'}</span><p>${escapeHtml(state.settings.receiptNote)}</p></div>`
@@ -385,11 +385,14 @@ async function downloadPdf(): Promise<void> {
   const client = ($('#receipt-client') as HTMLInputElement).value.trim() || 'Client copy'
   const total = sessions.reduce((sum, s) => sum + durationMinutes(s), 0)
   const endLabel = new Date(end); endLabel.setDate(endLabel.getDate() - 1)
-  const brand = state.settings.businessName || 'Work Receipt'
+  const brand = state.settings.businessName || state.settings.freelancerName || 'Work Receipt'
   doc.setFillColor(244, 238, 220); doc.rect(0, 0, 595, 842, 'F')
   doc.setFillColor(255, 253, 246); doc.roundedRect(36, 36, 523, 770, 4, 4, 'F')
   doc.setDrawColor(23, 107, 100); doc.setLineWidth(2); doc.line(64, 92, 531, 92)
   doc.setTextColor(23, 35, 33); doc.setFont('times', 'bold'); doc.setFontSize(23); doc.text(brand, 64, 75)
+  if (state.settings.businessName && state.settings.freelancerName) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(75, 87, 82); doc.text(state.settings.freelancerName, 64, 86)
+  }
   doc.setFont('courier', 'normal'); doc.setFontSize(8); doc.setTextColor(75, 87, 82); doc.text('SELF-REPORTED WORK RECORD', 531, 72, { align: 'right' })
   doc.setFont('courier', 'normal'); doc.setFontSize(9); doc.text('PREPARED FOR', 64, 124); doc.text('WEEK', 280, 124); doc.text('TOTAL TIME', 531, 124, { align: 'right' })
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(23, 35, 33); doc.text(client, 64, 143)
@@ -465,7 +468,12 @@ async function saveSettings(event: Event): Promise<void> {
   event.preventDefault()
   state.settings = { id: 'settings', freelancerName: ($('#settings-name') as HTMLInputElement).value.trim(), businessName: ($('#settings-business') as HTMLInputElement).value.trim(), defaultClient: ($('#settings-client') as HTMLInputElement).value.trim(), receiptNote: ($('#settings-note') as HTMLTextAreaElement).value.trim() || defaultSettings.receiptNote, updatedAt: new Date().toISOString() }
   await db.settings.put(state.settings)
-  ;($('#settings-dialog') as HTMLDialogElement).close(); showToast('Receipt identity saved on this device')
+  ;($('#settings-dialog') as HTMLDialogElement).close()
+  if (($('#receipt-dialog') as HTMLDialogElement).open) {
+    ;($('#receipt-client') as HTMLInputElement).value = state.settings.defaultClient
+    renderReceipt()
+  }
+  showToast('Receipt identity saved on this device')
 }
 
 function setupEvents(): void {
@@ -486,6 +494,27 @@ function setupEvents(): void {
   document.querySelectorAll<HTMLDialogElement>('dialog').forEach((dialog) => dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close() }))
   window.addEventListener('online', setConnectionStatus)
   window.addEventListener('offline', setConnectionStatus)
+}
+
+function applyRouteMetadata(): void {
+  if (!isDemoMode) return
+  const title = 'Demo — Work Receipt'
+  const description = 'Try a sample week of freelance work sessions and create a self-reported client receipt.'
+  document.title = title
+  document.querySelector<HTMLMetaElement>('meta[name="description"]')!.content = description
+  document.querySelector<HTMLLinkElement>('link[rel="canonical"]')!.href = 'https://field-time-invoice-proof.sociobot.in/demo'
+  document.querySelector<HTMLMetaElement>('meta[property="og:url"]')!.content = 'https://field-time-invoice-proof.sociobot.in/demo'
+  document.querySelector<HTMLMetaElement>('meta[property="og:title"]')!.content = title
+  document.querySelector<HTMLMetaElement>('meta[property="og:description"]')!.content = description
+  document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')!.content = title
+  document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]')!.content = description
+}
+
+function focusRouteHeading(): void {
+  const heading = $('#page-title') as HTMLElement
+  heading.tabIndex = -1
+  heading.focus({ preventScroll: true })
+  $('#route-announcer').textContent = document.title
 }
 
 async function registerServiceWorker(): Promise<void> {
@@ -529,20 +558,13 @@ async function seedDemo(force = false): Promise<void> {
 }
 
 async function init(): Promise<void> {
+  applyRouteMetadata()
   if (isDemoMode) await seedDemo()
   try { [state.sessions, state.settings] = await Promise.all([allSessions(), getSettings()]) }
   catch { showToast('Local storage could not be opened. Check private browsing settings.') }
   setupEvents(); renderTimer(); renderSessions(); setConnectionStatus(); registerServiceWorker()
+  focusRouteHeading()
   if (isDemoMode) {
-    document.title = 'Demo — Work Receipt'
-    document.querySelector<HTMLLinkElement>('link[rel="canonical"]')!.href = 'https://field-time-invoice-proof.sociobot.in/demo'
-    document.querySelector<HTMLMetaElement>('meta[property="og:url"]')!.content = 'https://field-time-invoice-proof.sociobot.in/demo'
-    document.querySelector<HTMLMetaElement>('meta[property="og:title"]')!.content = 'Demo — Work Receipt'
-    document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')!.content = 'Demo — Work Receipt'
-    const heading = $('#page-title') as HTMLElement
-    heading.tabIndex = -1
-    heading.focus()
-    $('#route-announcer').textContent = 'Demo — Work Receipt'
     const resetDemo = async () => {
       await seedDemo(true)
       state.settings = await getSettings()
@@ -551,9 +573,11 @@ async function init(): Promise<void> {
       openReceipt()
       showToast('Demo reset to the sample week')
     }
-    const startReal = async () => {
+    const startReal = async (event: Event) => {
+      event.preventDefault()
       await db.delete()
       setActiveTimer(null)
+      location.assign('/')
     }
     $('#reset-demo').addEventListener('click', resetDemo)
     document.querySelectorAll<HTMLButtonElement>('.reset-demo-control').forEach((control) => control.addEventListener('click', resetDemo))
@@ -563,5 +587,9 @@ async function init(): Promise<void> {
   }
   window.setInterval(() => { if (state.timer) { state.now = Date.now(); renderTimer() } }, 1000)
 }
+
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) window.setTimeout(focusRouteHeading, 0)
+})
 
 init()
