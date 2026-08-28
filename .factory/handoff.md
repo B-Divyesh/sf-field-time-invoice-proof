@@ -41,13 +41,14 @@ Local results on 2026-08-28:
 
 Production URL: `https://field-time-invoice-proof.sociobot.in`.
 
-- Repair commit `fe60b4bb5e6bcad9b37fe3a9b107527d3632334b` was pushed to `origin/main` and deployed through `/opt/fleet/lib/deploy-static.sh field-time-invoice-proof dist`.
+- Repair commits through `73df34d` were pushed to `origin/main` and deployed through `/opt/fleet/lib/deploy-static.sh field-time-invoice-proof dist`.
 - A new clone of that remote commit passed `npm ci`, unit tests, build, each of the 10 claim commands separately, and the complete browser suite.
 - Cold Chromium verified `/`, `/demo`, and `/?demo=1`. Demo isolation, reset, start-real, offline reload, titles, route announcement, and 390/390 mobile width passed.
 - Cold request logging found no third-party request. Console and page errors were empty. Full-impact axe violations were empty.
 - `/`, `/demo`, `/privacy/`, `/terms/`, `/robots.txt`, and `/sitemap.xml` return 200. An unknown URL returns the designed page with status 404.
 - The manifest returns `application/manifest+json`. Root responses include CSP with `frame-ancestors 'none'`, Permissions-Policy, X-Frame-Options, nosniff, and referrer policy.
 - Live hashed JS and CSS return `Cache-Control: public, max-age=31536000, immutable` and match local `dist/` SHA-256 hashes.
+- The post-deploy crawl found two dead placeholder evidence links. They were replaced with bundled sample evidence pages, then the app was rebuilt and redeployed. The final demo crawl returns 200 for every link.
 - Live Lighthouse: Performance 100, Accessibility 100, Best Practices 100, SEO 100; LCP 1.7 s, TBT 50 ms, CLS 0.003, TTI 1.7 s.
 - Live evidence is under `.factory/evidence/live-home/`, `.factory/evidence/live-demo/`, and `.factory/evidence/lighthouse-live.json`.
 

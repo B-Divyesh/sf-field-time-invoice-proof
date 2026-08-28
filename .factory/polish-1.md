@@ -35,7 +35,7 @@ Candidate `4716d10191c65df5ebc2a0275179036fc274c341` was repaired against cumula
 
 ## Live evidence summary
 
-- Deployed commit: `fe60b4bb5e6bcad9b37fe3a9b107527d3632334b`.
+- Deployed repair commits: `fe60b4b` plus the final live-link repair `73df34d`.
 - `/`, `/demo`, `/?demo=1`, `/privacy/`, `/terms/`, `/robots.txt`, and `/sitemap.xml`: expected content and status 200.
 - `/not-a-real-page`: designed 404 content and HTTP 404.
 - Demo: three sample sessions; visible banner; isolated database; reset passed; start-real restored the untouched real record; offline reload passed.
@@ -43,6 +43,7 @@ Candidate `4716d10191c65df5ebc2a0275179036fc274c341` was repaired against cumula
 - Accessibility: axe violations at all impact levels: zero. Mobile width: `390/390`.
 - Titles: root, Demo, Privacy, and Terms all matched their route-specific titles. `?demo=1` updated to `Demo — Work Receipt` after initialization.
 - Headers: CSP/frame protection/Permissions-Policy present; manifest MIME is `application/manifest+json`; hashed JS/CSS are `public, max-age=31536000, immutable`.
-- Artifact match: live JS SHA-256 `95f7b6aec60559491e2a646fc4ae925bae85f55f27b65485aff0784937e9eecf`; live CSS SHA-256 `d8e811f9d38ce8a1f2cfa2746a8bd5e9e4edf5c80684ccb770cba4d24f23fa32`; both equal local `dist/`.
+- Link crawl: every root, Demo, Privacy, Terms, footer, and bundled sample-evidence link returns 200. The first deployment exposed two 404 placeholder evidence links; both were replaced and the product was redeployed before handoff.
+- Artifact match: live JS SHA-256 `29b2ddfedb53193fe11d725100d9bc72ffe9b65e729290bd0a9d975ae0bc0050`; live CSS SHA-256 `d8e811f9d38ce8a1f2cfa2746a8bd5e9e4edf5c80684ccb770cba4d24f23fa32`; both equal local `dist/`.
 - Live Lighthouse: 100 Performance, 100 Accessibility, 100 Best Practices, 100 SEO; LCP 1.7 s, TBT 50 ms, CLS 0.003, TTI 1.7 s.
 - Screenshots and verifier JSON: `.factory/evidence/live-home/` and `.factory/evidence/live-demo/`.
